@@ -23,7 +23,7 @@ const App = () => {
     <>
       <header className="fixed split-nav">
         <h1>
-          <a href="/">Fun with Flags</a>
+          <a href="/fun-with-flags/">Fun with Flags</a>
         </h1>
         <Switcher
           value={theme}
@@ -33,10 +33,10 @@ const App = () => {
 
       <Router>
         <Switch>
-          <Route exact path="/">
+          <Route exact path="/fun-with-flags">
             <Content />
           </Route>
-          <Route path="/flag/:name">
+          <Route path="/fun-with-flags/:code">
             <Detail></Detail>
           </Route>
         </Switch>

@@ -27,14 +27,13 @@ const FlagPanel = (props) => {
     updateResults(setCurrents, countries, region);
   }, [name, region, countries]);
   const arts = getFlags(currents);
-  useEffect(()=>{
+  useEffect(() => {
     document.querySelectorAll("img").forEach(lazyLoad);
-
-  },[arts])
+  }, [arts]);
   return <section>{arts}</section>;
 };
 
-const FlagItem = ({ name, population, region, capital, flag }, index) => {
+const FlagItem = ({ name, population, region, capital, flag, code }, index) => {
   const args = [population, region];
   const image = <img className="image-top" lazy={flag} alt="flag-image" />;
 
@@ -47,7 +46,7 @@ const FlagItem = ({ name, population, region, capital, flag }, index) => {
       className="card paper-switch-tile-card border"
       key={`flag-${index}`}
     >
-      <Link to={`/flag/${name}`}>
+      <Link to={`/fun-with-flags/${code}`}>
         {image}
 
         <div className="card-body">
@@ -80,7 +79,9 @@ const getFlagsFromApi = async (setCountries, name) => {
   fetch(url)
     .then((res) => res.json())
     .then((response) => {
+      console.log(response)
       const data = response.map(toObject);
+      console.log(data)
       setCountries(data);
     });
 };
@@ -96,6 +97,7 @@ const toObject = (e) => ({
   region: e.region,
   capital: e.capital,
   flag: e.flags.svg,
+  code: e.cca3,
 });
 
 export default FlagPanel;

@@ -1,28 +1,29 @@
 import { useParams } from "react-router-dom/cjs/react-router-dom";
-import { useState, useEffect } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { useState, useEffect, useMemo } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { Link } from "react-router-dom";
 const Detail = () => {
-  const { name } = useParams();
+  const { code } = useParams();
   const [country, setCountry] = useState({});
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetch(`https://restcountries.com/v3.1/name/${name}?fullText=true`)
+    fetch(`https://restcountries.com/v2/alpha/${code}`)
       .then((res) => res.json())
       .then((response) => {
         setCountry({
-          nativeName: response[0].name.nativeName
-            ? Object.values(response[0].name.nativeName)[0].common
-            : "-",
-          capital: response[0].capital ? response[0].capital[0] : "-",
-          region: response[0].region,
-          subregion: response[0].subregion,
-          population: response[0].population,
-          languages: response[0].languages,
-          currencies: [response[0].currencies],
-          flag: response[0].flag,
-          lat: response[0].latlng[0],
-          lng: response[0].latlng[1],
+          nativeName: response.nativeName || "-",
+          capital: response.capital ? response.capital : "-",
+          region: response.region,
+          subregion: response.subregion,
+          population: response.population,
+          languages: response.languages,
+          currencies: response.currencies,
+          borders: response.borders,
+          name: response.name,
+          flag: response.flags.png,
+          lat: response.latlng[0],
+          lng: response.latlng[1],
         });
         setLoading(false);
       });
@@ -30,17 +31,11 @@ const Detail = () => {
     //   console.log("Error", error.stack);
     //   alert(error);
     // });
-  }, []);
+  }, [code]);
 
-  console.table({ lat: country.lat, lng: country.lng });
-  if (!loading)
-    return (
-      <section id="section-detail">
-        <Table name={name} country={country} />
-        <GoogleMap latlng={[country.lat, country.lng]} />
-      </section>
-    );
-  else {
+  if (!loading) {
+    return <Home country={country}></Home>;
+  } else {
     return (
       <section>
         <h1>Loading...</h1>
@@ -48,15 +43,75 @@ const Detail = () => {
     );
   }
 };
+const Home = ({ country }) => {
+  const [width, setWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    function handleResize() {
+      setWidth(window.innerWidth);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [width]);
+
+  const table = (
+    <div className="content" id="content1" style={{height:'100%', width:'100%'}}>
+      <Table country={country} />
+    </div>
+  );
+  const map = (
+    <div className="content" id="content2" style={{height:'100%', width:'100%'}}>
+      <Map latlng={[country.lat, country.lng]} />
+    </div>
+  );
+
+  const taps = (
+    <div className="row flex-spaces tabs" style={{
+      width:'90vw',
+      height:'100%',
+      paddingTop:20
+    }}>
+      <input id="tab1" type="radio" name="tabs" checked />
+      <label for="tab1">Details</label>
+
+      <input id="tab2" type="radio" name="tabs" />
+      <label for="tab2">Map</label>
+
+      {table}
+      {map}
+    </div>
+  );
+
+  return (
+    <section id="section-detail">
+      {width > 428 ? (
+        <>
+          {table}
+          {map}
+        </>
+      ) : (
+        taps
+      )}
+    </section>
+  );
+};
 
 const Table = (props) => {
-  const { name, country } = props;
+  const { country } = props;
   return (
     <table className="table-hover table">
       <thead>
         <tr>
+          <th>{country.name}</th>
           <th>
-            {name} <span>{country.flag}</span>
+            {console.log(country.flag)}
+            <div style={{ width: "50px", height: "38px" }}>
+              <img
+                style={{ opacity: 1, width: "auto", height: "100%" }}
+                src={country.flag}
+                alt="flag"
+              />
+            </div>
           </th>
         </tr>
       </thead>
@@ -64,7 +119,7 @@ const Table = (props) => {
         {Object.keys(country).map((key, index) => {
           if (index < 5) {
             return (
-              <tr>
+              <tr key={key}>
                 <td>{key}</td>
                 <td>{country[key]}</td>
               </tr>
@@ -74,11 +129,15 @@ const Table = (props) => {
         <tr>
           <td>currencies</td>
           <td>
-            {country.currencies.map((coin) => {
+            {Object.keys(country.currencies).map((coin) => {
               if (coin) {
-                const c = Object.values(coin)[0];
+                const c = country.currencies[coin];
                 return (
-                  <div className="coinItem badge" popover-top={c.name}>
+                  <div
+                    key={coin}
+                    className="coinItem badge"
+                    popover-top={c.name}
+                  >
                     {c.symbol}
                   </div>
                 );
@@ -91,40 +150,62 @@ const Table = (props) => {
           <td>
             {Object.keys(country.languages).map((lang) => (
               <div
+                key={lang}
                 className="coinItem badge"
-                popover-top={country.languages[lang]}
+                popover-top={country.languages[lang].name}
               >
-                {lang}
+                {country.languages[lang].iso639_2}
               </div>
             ))}
           </td>
         </tr>
+        {country.borders && (
+          <tr>
+            <td>borders</td>
+            <td>
+              {Object.keys(country.borders).map((item) => (
+                <Link to={`/fun-with-flags/${country.borders[item]}`}>
+                  <button
+                    style={{ cursor: "pointer" }}
+                    key={item}
+                    className="coinItem btn-small"
+                  >
+                    {country.borders[item]}
+                  </button>
+                </Link>
+              ))}
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   );
 };
-
-const GoogleMap = (props) => {
-  return (
-    <div className="card map">
+function ChangeView({ center }) {
+  const map = useMap();
+  map.setView(center, 7);
+  return null;
+}
+const Map = ({ latlng }) => {
+  console.log(latlng);
+  const map = useMemo(
+    () => (
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={props.latlng}
+        center={latlng}
         zoom={7}
         scrollWheelZoom={false}
       >
+        <ChangeView center={latlng} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={props.latlng}>
-          <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </Popup>
-        </Marker>
       </MapContainer>
-    </div>
+    ),
+    [latlng]
   );
+  return <div className="card map" >{map}</div>;
 };
 
 export default Detail;

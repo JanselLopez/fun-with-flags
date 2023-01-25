@@ -177,6 +177,11 @@ option {
   height: 90%;
   width: 90%;
 }
+.content{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 @media (max-width: 1400px) {
   section {
     grid-template-columns: repeat(4, 1fr);
@@ -216,5 +221,11 @@ option {
   section {
     grid-template-columns:  1fr;
   }
+}
 
+@media (max-width: 428px){
+  #section-detail{
+    padding: 0;
+    padding-top: 4rem;
+  }
 }
